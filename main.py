@@ -16,25 +16,10 @@ from bson import ObjectId
 
 from SpreadContent import SpreadContent
 from MongoDB import MongoDB
+from meowmeow import MeowMeow
 
-
+meow = MeowMeow()
 super_user = ["fine4139", "ayalovex0001", "liankuma"]
-
-meowmeow_input = []
-meowmeow_raw = [
-    "ごろごろ", "にゃっ", "にゃー", "にゃーん", "にゃーお", "にゃん", "にゃおーん", "にゃんにゃん", "にゃお",
-    "にゃにゃ", "にゃにゃっ", "にゃにゃにゃ", "にゃおー", "にゃにゃーん", "にゃーご", "にゃ", "なーん"
-]
-
-meowmeow_input += meowmeow_raw
-meowmeow_input += [meow.replace("に", "み") for meow in meowmeow_input]
-meowmeow_input += [jaconv.hira2kata(meow) for meow in meowmeow_input]
-meowmeow_input += [meow.replace("ー", "～") for meow in meowmeow_input]
-meowmeow_output = meowmeow_input.copy()
-meowmeow_output += [str(meow) + "！" for meow in meowmeow_input]
-
-meowmeow_input += ["🐱", "🐈", "🐾", "😺", "😸",
-                   "😹", "😻", "😼", "😽", "🙀", "😿", "😾", "シャー"]
 
 
 def contains_any_substring(main_string, substrings):
@@ -469,8 +454,7 @@ class MyBot(commands.Bot):
     async def on_register_message(self, message):
         try:
             await message.add_reaction("🤔")
-            is_meow = contains_any_substring(
-                str(message.content), meowmeow_input)
+            is_meow = meow.meowmeow_check(str(message.content))
             return_message = f"{message.author.mention} "
             return_view = None
             splited_message = re.split('[ |\n]', message.content)
@@ -484,6 +468,7 @@ class MyBot(commands.Bot):
             print("送信者の名前 : ", register_name, message.author)
 
             is_agent = False
+            print(splited_message)
             if splited_message[0] == "代理" and len(splited_message) >= 3:
                 if (str(message.author) in super_user):
                     register_name = splited_message[1]
@@ -492,29 +477,20 @@ class MyBot(commands.Bot):
                     splited_message.pop(0)
                     splited_message.pop(0)
                 else:
-                    if (is_meow):
-                        return_message += "えらー: 権限がありませんにゃ！"
-                    else:
-                        return_message += "ERROR: 権限がありません！"
+                    return_message+=meow.meowmeow_accent("ERROR: 権限がありません！", is_meow)
                     await message.channel.send(return_message)
                     return
             elif splited_message[0] == "代理" and len(splited_message) < 3:
-                if (is_meow):
-                    return_message += "えらー: 不正なメッセージ形式ですにゃ！"
-                else:
-                    return_message += "ERROR: 不正なメッセージ形式です！"
-
+                return_message += meow.meowmeow_accent("ERROR: 不正なメッセージ形式です！", is_meow)
                 await message.channel.send(return_message, view=return_view)
                 return
 
             is_registered_name = self.spread_content.name_exists(register_name)
 
+            print(splited_message)
             if splited_message[0] == '名前登録':  # 送信者の名前とIDが登録されておらず、登録する場合
                 if (is_registered_name):
-                    if (is_meow):
-                        return_message += "えらー: 既に登録されていますにゃ！"
-                    else:
-                        return_message += "ERROR: 既に登録されています！"
+                    return_message+=meow.meowmeow_accent("ERROR: 既に登録されています！", is_meow)
                 else:
                     return_view = ui.View()  # Viewインスタンスを作成
                     button_R = self.RegisterNameOKButton(
@@ -525,10 +501,7 @@ class MyBot(commands.Bot):
                         register_name=str(register_name),
                         register_id=registrant_id,
                         is_meow=is_meow)  # Buttonインスタンスを作成
-                    if (is_meow):
-                        return_message += f"{register_name}さんを登録しますかにゃ？"
-                    else:
-                        return_message += f"{register_name}さんを登録しますか？"
+                    return_message+=meow.meowmeow_accent(f"{register_name}さんを登録しますか？", is_meow)
                     return_view.add_item(button_R)
                 await message.channel.send(return_message, view=return_view)
                 return
@@ -556,10 +529,7 @@ class MyBot(commands.Bot):
                     for row_data in all_spread_data:
                         writer.writerow(row_data)
                     f.close()
-                if (is_meow):
-                    return_message += "送信しましたにゃ"
-                else:
-                    return_message += "送信しました"
+                return_message+=meow.meowmeow_accent("送信しました！", is_meow)
                 await message.channel.send(return_message,
                                            file=discord.File(
                                                "output.csv", 'output.csv'))
@@ -567,18 +537,14 @@ class MyBot(commands.Bot):
 
             elif splited_message[0] == "生存確認" or splited_message[
                     0] == "こんにちは！" or splited_message[0] == "こんにちはにゃ！":
-                if (is_meow):
-                    return_message += "こんにちはにゃ！"
-                else:
-                    return_message += "こんにちは！"
+                return_message+=meow.meowmeow_accent("こんにちは！", is_meow)
                 await message.channel.send(return_message)
                 await message.remove_reaction("🤔", message.guild.me)
                 await message.add_reaction("🥰")
                 return
 
-            elif contains_any_substring(splited_message[0], meowmeow_input) and len(splited_message) == 1:
-                return_message += random.choice(meowmeow_output)
-                return_message += random.choice(["🐾", "🐈", "", ""])
+            elif contains_any_substring(splited_message[0], meow.meowmeow_input) and len(splited_message) == 1:
+                return_message += meow.meowmeow_return()
                 await message.channel.send(return_message)
                 await message.remove_reaction("🤔", message.guild.me)
                 await message.add_reaction("🐈")
@@ -586,15 +552,10 @@ class MyBot(commands.Bot):
 
             elif splited_message[0] == '名前変更' and len(splited_message) == 2:
                 if (not self.spread_content.name_exists(register_name)):
-                    if (is_meow):
-                        return_message += "えらー: 指定の名前の人物は見つかりませんでしたにゃ"
-                    else:
-                        return_message += "ERROR: 指定の名前の人物は見つかりませんでした。"
+                    return_message+=meow.meowmeow_accent("ERROR: 指定の名前の人物は見つかりませんでした。",is_meow)
                 elif (self.spread_content.name_exists(splited_message[1])):
-                    if (is_meow):
-                        return_message += "えらー: 名前が被っていますにゃ！"
-                    else:
-                        return_message += "ERROR: 名前が被っています！"
+                    return_message+=meow.meowmeow_accent("ERROR: 名前が被っています！",is_meow)
+
                 else:
                     return_view = ui.View()  # Viewインスタンスを作成
                     button_RN = self.RenameOKButton(
@@ -606,10 +567,7 @@ class MyBot(commands.Bot):
                         new_name=splited_message[1],
                         is_meow=is_meow)  # Buttonインスタンスを作成
 
-                    if (is_meow):
-                        return_message += f"{register_name}さんの名前を{splited_message[1]}に変更しますかにゃ？"
-                    else:
-                        return_message += f"{register_name}さんの名前を{splited_message[1]}に変更しますか？"
+                    return_message += meow.meowmeow_accent(f"{register_name}さんの名前を{splited_message[1]}に変更しますか？",is_meow)
                     return_view.add_item(button_RN)
 
             elif splited_message[0] == '名前削除' and len(splited_message) >= 2:
@@ -618,10 +576,7 @@ class MyBot(commands.Bot):
                         splited_message[1]) - 3
 
                     if (cell_pos < 0):
-                        if (is_meow):
-                            return_message += "えらー: 名前が見つかりませんでしたにゃ"
-                        else:
-                            return_message += "ERROR: 名前が見つかりませんでした。"
+                        return_message += meow.meowmeow_accent("ERROR: 名前が見つかりませんでした。",is_meow)
                     else:
                         return_view = ui.View()  # Viewインスタンスを作成
                         button_D = self.NameDeleteOKButton(
@@ -632,16 +587,10 @@ class MyBot(commands.Bot):
                             delete_name=splited_message[1],
                             is_meow=is_meow)  # Buttonインスタンスを作成
 
-                        if (is_meow):
-                            return_message += f"{splited_message[1]}さんを削除しますかにゃ？"
-                        else:
-                            return_message += f"{splited_message[1]}さんを削除しますか？"
+                        return_message += meow.meowmeow_accent(f"{splited_message[1]}さんを削除しますか？",is_meow)
                         return_view.add_item(button_D)
                 else:
-                    if (is_meow):
-                        return_message += "えらー: 権限がありませんにゃ！"
-                    else:
-                        return_message += "ERROR: 権限がありません！"
+                    return_message += meow.meowmeow_accent("ERROR: 権限がありません！",is_meow)
 
             else:
                 return_message, return_view = self.analysis_point_spreadsheet(
@@ -667,31 +616,19 @@ class MyBot(commands.Bot):
         if (len(point_set_list) > 0):
             if (not is_name_exists):
                 if (is_agent):
-                    if (is_meow):
-                        return_message = f"{message.author.mention}  えらー: 存在しない名前ですにゃ！"
-                    else:
-                        return_message = f"{message.author.mention}  ERROR: 存在しない名前です！"
+                    return_message += meow.meowmeow_accent(f"{message.author.mention}  ERROR: 存在しない名前です！",is_meow)
                 else:
-                    if (is_meow):
-                        return_message += "えらー: 名前がスプレッドシートに登録されていませんにゃ！「名前登録」と送信すると名前を登録できますにゃ"
-                    else:
-                        return_message += "ERROR: あなたの名前がスプレッドシートに登録されていません！「名前登録」と送信すると名前を登録できます。"
+                    return_message += meow.meowmeow_accent("ERROR: あなたの名前がスプレッドシートに登録されていません！「名前登録」と送信すると名前を登録できます。",is_meow)
                 return return_message, None
             else:
                 is_registered_name, unupdated_list = self.spread_content.find_point(
                     register_name, point_set_list)
 
                 if (len(unupdated_list) == 0 and len(point_set_list) > 0):
-                    if (is_meow):
-                        return_message = f"{message.author.mention}   最新の状態ですにゃ！"
-                    else:
-                        return_message = f"{message.author.mention}   最新の状態です！"
+                    return_message += meow.meowmeow_accent(f"{message.author.mention}  最新の状態です！",is_meow)
 
                 elif (is_registered_name):
-                    if (is_meow):
-                        return_message = f"{message.author.mention} 以下の内容でよいなら更新をポチっと押してくださいにゃ\n"
-                    else:
-                        return_message = f"{message.author.mention} 以下の内容でよいなら更新をポチっと押してください\n"
+                    return_message += meow.meowmeow_accent(f"{message.author.mention} 以下の内容でよいなら更新をポチっと押してください\n",is_meow)
                     return_message += register_name + "さん\n"
                     for unupdated_point in unupdated_list:
                         return_row_message = ""
@@ -719,8 +656,7 @@ class MyBot(commands.Bot):
     async def on_timeline_message(self, message):
         try:
             await message.add_reaction("🤔")
-            is_meow = contains_any_substring(
-                str(message.content), meowmeow_input)
+            is_meow = meow.meowmeow_check(str(message.content))
             tl_author_other = self.mongo_db.distinct_tl("author")
 
             return_message = f"{message.author.mention} "
@@ -728,10 +664,8 @@ class MyBot(commands.Bot):
             self.messageTimelineContainer = MessageTimelineContainer(
                 message, tl_author_other)
             if (self.messageTimelineContainer.message_type == "TL"):
-                if (is_meow):
-                    return_message += "以下のタイムラインを登録しますかにゃ？\n"
-                else:
-                    return_message += "以下のタイムラインを登録しますか？\n"
+                
+                return_message += meow.meowmeow_accent("以下のタイムラインを登録しますか？\n",is_meow)
 
                 return_message += self.messageTimelineContainer.tl_string
 
@@ -783,21 +717,16 @@ class MyBot(commands.Bot):
                         label=label_text, description=description_text, value=str(tl["_id"]))
                     options.append(option)
 
-                send_text = ""
+                query_text = ""
                 for query in search_query_list:
                     if (query != None):
-                        send_text += query+" "
+                        query_text += query+" "
 
-                if (send_text != ""):
-                    if (is_meow):
-                        send_text += "でけんさくしたにゃ\n"
-                    else:
-                        send_text += "の条件で検索しました\n"
+                if (query_text != ""):
+                    return_message += query_text
+                    return_message += meow.meowmeow_accent("の条件で検索しました\n",is_meow)
 
-                if (is_meow):
-                    return_message += send_text+"みたいタイムラインをえらんでにゃ\n"
-                else:
-                    return_message += send_text+"表示したいタイムラインを選択してください\n"
+                return_message += meow.meowmeow_accent("表示したいタイムラインを選択してください\n",is_meow)
 
                 return_view = ui.View()  # Viewインスタンスを作成
                 list_TS = self.TLSearchList(
@@ -846,21 +775,15 @@ class MyBot(commands.Bot):
                         label=label_text, description=description_text, value=str(tl["_id"]))
                     options.append(option)
 
-                send_text = ""
+                query_text = ""
                 for query in search_query_list:
                     if (query != None):
-                        send_text += query+" "
+                        query_text += query+" "
 
-                if (send_text != ""):
-                    if (is_meow):
-                        send_text += "でけんさくしたにゃ\n"
-                    else:
-                        send_text += "の条件で検索しました\n"
+                if (query_text != ""):
+                    return_message += meow.meowmeow_accent("の条件で検索しました\n",is_meow)
 
-                if (is_meow):
-                    return_message += send_text+"みたいタイムラインをえらんでにゃ\n"
-                else:
-                    return_message += send_text+"表示したいタイムラインを選択してください\n"
+                return_message += meow.meowmeow_accent("表示したいタイムラインを選択してください\n",is_meow)
 
                 return_view = ui.View()  # Viewインスタンスを作成
                 list_TS = self.TLSearchList(
@@ -874,8 +797,7 @@ class MyBot(commands.Bot):
 
             elif (self.messageTimelineContainer.message_type == "none"):
                 if (is_meow):
-                    return_message += random.choice(meowmeow_output)
-                    return_message += random.choice(["🐾", "🐈", "", ""])
+                    return_message += meow.meowmeow_return()
 
             if (return_message != f"{message.author.mention} "):
                 await message.channel.send(return_message, view=return_view)
@@ -906,10 +828,7 @@ class MyBot(commands.Bot):
                 await interaction.response.defer(thinking=True)
 
                 self.spread_sheet.register_point(self.unupdated_list)
-                if (self.is_meow):
-                    send_message = "更新しましたにゃ！\n"
-                else:
-                    send_message = "更新しました！\n"
+                send_message += meow.meowmeow_accent("更新しました！\n",self.is_meow)
 
                 for unupdated_point in self.unupdated_list:
                     return_row_message = unupdated_point[
@@ -1055,13 +974,13 @@ class MyBot(commands.Bot):
                 send_message = ""
                 selected_value = self.values[0]
                 if (self.message_type == "please"):
-                    send_message += "選択したタイムラインです。\n"
+                    send_message += meow.meowmeow_accent("選択したタイムラインです\n", self.is_meow)
                     document = self.mongoDB.search_tl_id(
                         ObjectId(selected_value))
                     send_message += self.messageTimelineContainer.tl_all_printer(
                         document)
                 elif (self.message_type == "delete"):
-                    send_message += "削除しました。\n"
+                    send_message += meow.meowmeow_accent("削除しました\n", self.is_meow)
                     self.mongoDB.delete_tl(ObjectId(selected_value))
 
                 await interaction.followup.send(content=send_message)
