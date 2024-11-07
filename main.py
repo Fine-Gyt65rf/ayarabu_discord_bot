@@ -826,7 +826,7 @@ class MyBot(commands.Bot):
 
             try:
                 await interaction.response.defer(thinking=True)
-
+                send_message = ""
                 self.spread_sheet.register_point(self.unupdated_list)
                 send_message += meow.meowmeow_accent("更新しました！\n",self.is_meow)
 
