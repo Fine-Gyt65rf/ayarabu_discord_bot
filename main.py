@@ -602,10 +602,10 @@ class messageManager(commands.Cog):
     def register_name(self, registrant_name):
         try:
             send_message = self.spread_content.registered_name(registrant_name, self.registrant_id)
-            return send_message,None
+            return send_message,View()
         except Exception as e:
             error_message = traceback.format_exc()
-            return f"予期しないエラーが発生しました: {e}\n" + error_message,None
+            return f"予期しないエラーが発生しました: {e}\n" + error_message,View()
             print(f"予期しないエラーが発生しました: {e}\n"+error_message)
 
 
@@ -620,10 +620,10 @@ class messageManager(commands.Cog):
     def delete_name(self, delete_name):
         try:
             send_message = self.spread_content.delete_name(delete_name, is_meow=self.is_meow)
-            return send_message,None
+            return send_message,View()
         except Exception as e:
             error_message = traceback.format_exc()
-            return f"予期しないエラーが発生しました: {e}\n" + error_message,None
+            return f"予期しないエラーが発生しました: {e}\n" + error_message,View()
             print(f"予期しないエラーが発生しました: {e}\n"+error_message)
 
     def print_csv(self):
@@ -681,10 +681,10 @@ class messageManager(commands.Cog):
             for unupdated_point in unupdated_list:
                 return_row_message = unupdated_point["element"] + unupdated_point["level"] + "\t" +  unupdated_point["registered_point"] + "→" + unupdated_point["point"] + "\n"
                 send_message += return_row_message
-            return send_message,None
+            return send_message,View()
         except Exception as e:
             error_message = traceback.format_exc()
-            return f"予期しないエラーが発生しました: {e}\n" + error_message,None
+            return f"予期しないエラーが発生しました: {e}\n" + error_message,View()
             print(f"予期しないエラーが発生しました: {e}\n" + error_message)
 
 
@@ -719,7 +719,7 @@ class messageManager(commands.Cog):
                 await self.message.remove_reaction("🤔", self.message.guild.me)
         except Exception as e:
             error_message = traceback.format_exc()
-            await self.message.channel.send(f"予期しないエラーが発生しました: {e}\n"+error_message),None
+            await self.message.channel.send(f"予期しないエラーが発生しました: {e}\n"+error_message),View()
             print(f"予期しないエラーが発生しました: {e}\n"+error_message)
 
     def register_timeline_check(self):
@@ -730,10 +730,10 @@ class messageManager(commands.Cog):
     def register_timeline(self):
         try:
             send_message = self.mongo_db.insert_tl(self.messageTimelineContainer.json_string)
-            return send_message,None
+            return send_message,View()
         except Exception as e:
             error_message = traceback.format_exc()
-            return f"予期しないエラーが発生しました: {e}\n" + error_message,None
+            return f"予期しないエラーが発生しました: {e}\n" + error_message,View()
             print(f"予期しないエラーが発生しました: {e}\n"+error_message)
 
     def please_timeline_check(self):
@@ -794,7 +794,7 @@ class messageManager(commands.Cog):
         send_message = meow.meowmeow_accent("選択したタイムラインです\n", self.is_meow)
         document = self.mongo_db.search_tl_id(ObjectId(selected_value))
         send_message += self.messageTimelineContainer.tl_all_printer(document)
-        return send_message,None
+        return send_message,View()
 
 
     def delete_timeline_check(self):
@@ -811,50 +811,56 @@ class messageManager(commands.Cog):
         tls = self.mongo_db.search_tl(
             element=element, level=level, attack_type=attack_type, point=point, author=author, see_all=see_all)
         options = []
-        for tl in tls:
-            label_text = ""
-            if (tl["attack_type"] != None):
-                label_text += tl["attack_type"]
-            label_text += tl["enemy_element"]+tl["enemy_level"]
-            label_text += "の"
-            label_text += tl["point"]+"P "
-            label_text += tl["author"]
-            label_text += "著 "
-            label_text += "作成日"
-            label_text += tl["post_date"]
+        if(len(tls)==0):
+            self.return_message += meow.meowmeow_accent("その条件のタイムラインは見つかりませんでした。",self.is_meow)
+        else:
+            for tl in tls:
+                label_text = ""
+                if (tl["attack_type"] != None):
+                    label_text += tl["attack_type"]
+                label_text += tl["enemy_element"]+tl["enemy_level"]
+                label_text += "の"
+                label_text += tl["point"]+"P "
+                label_text += tl["author"]
+                label_text += "著 "
+                label_text += "作成日"
+                label_text += tl["post_date"]
 
-            description_text = ""
-            party_text = tl["party"]
-            # カタカナを半角に変換
-            party_text = jaconv.z2h(
-                party_text, kana=True, ascii=True, digit=True)
-            description_text += party_text
+                description_text = ""
+                party_text = tl["party"]
+                # カタカナを半角に変換
+                party_text = jaconv.z2h(
+                    party_text, kana=True, ascii=True, digit=True)
+                description_text += party_text
 
-            option = discord.SelectOption(
-                label=label_text, description=description_text, value=str(tl["_id"]))
-            options.append(option)
+                option = discord.SelectOption(
+                    label=label_text, description=description_text, value=str(tl["_id"]))
+                options.append(option)
 
-        query_text = ""
-        for query in search_query_list:
-            if (query != None):
-                query_text += query+" "
+            query_text = ""
+            for query in search_query_list:
+                if (query != None):
+                    query_text += query+" "
 
-        if (query_text != ""):
-            self.return_message += meow.meowmeow_accent("の条件で検索しました\n",self.is_meow)
+            if (query_text != ""):
+                self.return_message += query_text
+                self.return_message += meow.meowmeow_accent("の条件で検索しました\n",self.is_meow)
 
         self.return_message += meow.meowmeow_accent("削除したいタイムラインを選択してください\n",self.is_meow)
+        print(self.message.author.id)
+        self.return_view.add_item(DynamicSelectMenu(self.bot, self.message.author.id, self.is_meow, self.really_delete_check, options, id = self.message.author.id))
 
-        self.return_view.add_item(DynamicSelectMenu(self.bot, self.message.author.id, self.is_meow, self.delete_timeline, options))
-
-    def really_delete_check(self,selected_value):
+    def really_delete_check(self, selected_value, id):
         send_message = meow.meowmeow_accent("本当にこのタイムラインを削除しますか？\n", self.is_meow)
-        self.return_view.add_item(DynamicSelectMenu(self.bot, self.message.author.id, self.is_meow, self.delete_timeline, ObjectId(selected_value)))
-        return send_message,self.return_view
+        self.return_view = View()
+        print(self.message.author.id)
+        self.return_view.add_item(DynamicOkButton(self.bot, id, self.is_meow, self.delete_timeline, id = ObjectId(selected_value)))
+        return send_message, self.return_view
 
-    def delete_timeline(self,selected_value):
-        send_message = meow.meowmeow_accent("削除しました\n", self.is_meow)
-        self.mongo_db.delete_tl(ObjectId(selected_value))
-        return send_message,None
+    def delete_timeline(self,id):
+        send_message = meow.meowmeow_accent("削除しました！\n", self.is_meow)
+        self.mongo_db.delete_tl(id)
+        return send_message,View()
     
 
 
@@ -902,23 +908,22 @@ class DynamicOkButton(Button):
 
     async def callback(self, interaction: discord.Interaction):
         try:
+            print(interaction.user.id,self.user_id)
             if interaction.user.id != self.user_id:
                 pass
             else:
                 # 動的に設定された処理を実行
                 await interaction.response.defer(thinking=True)
-                return_view=View()
-                return_message,return_view_ui = self.action(**self.kwargs)
-                if(return_view_ui!=None):
-                    return_view.add_item(return_view_ui)
-                await interaction.followup.send(content=return_message,view=return_view)
+                return_view = View()
+                return_message, return_view = self.action(**self.kwargs)
+                await interaction.followup.send(content=return_message, view=return_view)
         except Exception as e:
             error_message = traceback.format_exc()
             await interaction.followup.send(content=f"予期しないエラーが発生しました: {e}\n"+error_message)
             print(f"予期しないエラーが発生しました: {e}\n"+error_message)
 
 class DynamicSelectMenu(Select):
-    def __init__(self, bot, author_id, is_meow, action, options , **kwargs):
+    def __init__(self, bot, author_id, is_meow, action, options ,**kwargs):
         super().__init__(options = options)
         self.bot = bot
         self.user_id = author_id
@@ -928,16 +933,15 @@ class DynamicSelectMenu(Select):
         self.kwargs = kwargs
 
     async def callback(self, interaction: discord.Interaction):
+        print(interaction.user.id,self.user_id)
         if interaction.user.id != self.user_id:
             pass
         else:
             try:
                 await interaction.response.defer(thinking=True)
                 return_view=View()
-                return_message,return_view_ui = self.action(self.values[0] , **self.kwargs)
-                if(return_view_ui!=None):
-                    return_view.add_item(return_view_ui)
-                await interaction.followup.send(content=return_message,view=return_view)
+                return_message,return_view = self.action(self.values[0] , **self.kwargs)
+                await interaction.followup.send(content=return_message, view=return_view)
             except Exception as e:
                 error_message = traceback.format_exc()
                 await interaction.followup.send(content=f"予期しないエラーが発生しました: {e}\n"+error_message)
