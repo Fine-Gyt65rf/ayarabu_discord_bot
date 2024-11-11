@@ -74,6 +74,12 @@ class SpreadContent:
         ss_id_list = ss_id_list[2:ss_id_list.index(".")]
         return ss_id_list
 
+    def convert_id_to_name(self, id):
+        cell_pos = self.find_id_pos(id)
+        ss_name_list = self.read_name()
+        name = ss_name_list[cell_pos - 3]
+        return name
+
     def convert_name_to_id(self, id):
         cell_pos = self.find_id_pos(id)
         ss_name_list = self.read_name()

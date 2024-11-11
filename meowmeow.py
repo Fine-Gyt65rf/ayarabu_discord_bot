@@ -11,7 +11,6 @@ class MeowMeow:
         meowmeow_input_raw = ["にゃ" ,"みゃ" ,"ニャ" , "ミャ", "シャー"]
 
         meowmeow_input = meowmeow_input_raw
-        meowmeow_input += ["🐱", "🐈", "🐾", "😺", "😸", "😹", "😻", "😼", "😽", "🙀", "😿", "😾"]
 
         meowmeow_output_raw = [
             "ごろごろ", "にゃっ", "にゃー", "にゃーん", "にゃーお", "にゃん", "にゃおーん", "にゃんにゃん", "にゃお",
@@ -33,7 +32,7 @@ class MeowMeow:
         self.cat_phrases = ["にゃ", "ニャ","にゃ～", "ニャ～"]
 
         # 変換対象の語尾や命令形
-        self.tails = ["です", "ます", "だ", "よ", "ね", "わ", "か", "する", "ください", "した"]
+        self.tails = ["です", "ます", "だ", "よ", "ね", "わ", "か", "する", "ください", "した", "ません"]
 
         # 変換対象の語尾リストを正規表現に変換
         self.tail_pattern = r'(' + '|'.join(self.tails) + r')\b([、。!?！？]?)'
