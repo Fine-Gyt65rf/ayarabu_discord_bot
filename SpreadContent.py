@@ -116,7 +116,7 @@ class SpreadContent:
         else:
             return -1
 
-    def delete_name(self, name, is_meow):
+    def delete_name(self, name):
         self.get_name_len()
         all_spread_data = self.get_cells(
             self.x_pos, self.y_pos, self.x_len, self.name_len)
@@ -127,62 +127,41 @@ class SpreadContent:
         print(all_spread_data)
 
         if (cell_pos < 0):
-            if (is_meow):
-                return_message = "えらー: 名前が見つかりませんでしたにゃ"
-            else:
-                return_message = "ERROR: 名前が見つかりませんでした。"
+            return_message = "ERROR: 名前が見つかりませんでした。"
         elif (removed_data[0] == name):  # 削除する人のインデックスと名前がちゃんと一致していた場合
             # update_cells(self, start_x, start_y, end_x, end_y, values)
             self.update_cells(self.x_pos, self.y_pos,
                               self.x_len, self.name_len, all_spread_data)
             dt_now = datetime.datetime.now()
             self.ss.update_cell(1, 2, dt_now.strftime('%Y年%m月%d日 %H:%M:%S'))
-            if (is_meow):
-                return_message = f"{name}さんを削除しましたにゃ"
-            else:
-                return_message = f"{name}さんを削除しました。"
+            return_message = f"{name}さんを削除しました。"
         else:
-            if (is_meow):
-                return_message = "えらー: 削除できませんでしたにゃ"
-            else:
-                return_message = "ERROR: 削除できませんでした。"
+            return_message = "ERROR: 削除できませんでした。"
         return return_message
 
-    def registered_name(self, name, id, is_meow):
+    def registered_name(self, name, id):
         is_registered_name = self.name_exists(name)
         if (is_registered_name):
-            if (is_meow):
-                return_message = "えらー: 既に登録されていますにゃ！"
-            else:
-                return_message = "ERROR: 既に登録されています！"
+            return_message = "ERROR: 既に登録されています！"
         else:
             y_pos = self.find_name_pos("")
             self.ss.update_cell(y_pos, 2, name)  # name
             self.ss.update_cell(y_pos, 3, id)  # name
             dt_now = datetime.datetime.now()
             self.ss.update_cell(1, 2, dt_now.strftime('%Y年%m月%d日 %H:%M:%S'))
-            if (is_meow):
-                return_message = f"{name}さんを登録しましたにゃ！"
-            else:
-                return_message = f"{name}さんを登録しました！"
+            return_message = f"{name}さんを登録しました！"
         return return_message
 
-    def rename_name(self, old_name, new_name, is_meow):
+    def rename_name(self, old_name, new_name):
         is_registered_name = self.name_exists(new_name)
         if (is_registered_name):
-            if (is_meow):
-                return_message = "えらー: 既に登録されていますにゃ！"
-            else:
-                return_message = "ERROR: 既に登録されています！"
+            return_message = "ERROR: 既に登録されています！"
         else:
             y_pos = self.find_name_pos(old_name)
             self.ss.update_cell(y_pos, 2, new_name)  # name
             dt_now = datetime.datetime.now()
             self.ss.update_cell(1, 2, dt_now.strftime('%Y年%m月%d日 %H:%M:%S'))
-            if (is_meow):
-                return_message = f"{new_name}さんに変更しましたにゃ！"
-            else:
-                return_message = f"{new_name}さんに変更しました！"
+            return_message = f"{new_name}さんに変更しました！"
         return return_message
 
     def find_point(self, user_name, parsed_dict):
