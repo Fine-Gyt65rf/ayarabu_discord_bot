@@ -619,7 +619,7 @@ class messageManager(commands.Cog):
 
     def delete_name(self, delete_name):
         try:
-            send_message = self.spread_content.delete_name(delete_name, is_meow=self.is_meow)
+            send_message = self.spread_content.delete_name(delete_name)
             return send_message,View()
         except Exception as e:
             error_message = traceback.format_exc()
