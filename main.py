@@ -18,6 +18,9 @@ from bson import ObjectId
 from SpreadContent import SpreadContent
 from MongoDB import MongoDB
 from meowmeow import MeowMeow
+from MessagePointContainer import MessagePointContainer
+from MessageTimelineContainer import MessageTimelineContainer
+from DynamicUi import DynamicOkButton,DynamicSelectMenu
 
 meow = MeowMeow()
 super_user = ["fine4139", "ayalovex0001", "liankuma"]
@@ -27,404 +30,6 @@ def contains_any_substring(main_string, substrings):
     return any(substring in main_string for substring in substrings)
 
 
-class MessagePointContainer:
-    def __init__(self, message):
-        self.reg_elements = ["火", "水", "風", "光", "闇", "全"]
-        self.reg_levels = ["180", "190", "200", "250", "275", "300", "325"]
-        self.reg_points = ["10", "11", "12", "13", "14", "15",
-                           "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
-        self.words_to_keep_reg = self.reg_elements+self.reg_levels+self.reg_points
-
-        self.message = message
-        parsed_list = self.extract_words_per_line(
-            self.message, self.words_to_keep_reg)
-        self.point_set_list = self.detect_pattern_in_list(parsed_list)
-
-    def extract_words_per_line(self, text, words_to_keep):
-        # 改行で分割
-        lines = text.splitlines()
-        all_results = []
-
-        for line in lines:
-            # 単語を正規表現のパターンに変換
-            pattern = '|'.join(map(re.escape, words_to_keep))
-            # 各行で単語を抽出し、リストに格納
-            result = re.findall(pattern, line)
-            # それぞれの単語を適切な型に変換
-            result = [(word) if word.isdigit() else word for word in result]
-            all_results.append(result)
-
-        all_results = list(filter(None, all_results))
-        print(all_results)
-        return all_results
-
-    def detect_pattern_in_list(self, parsed_list):
-
-        print(parsed_list)
-        new_parsed_list = []
-        for line in parsed_list:
-            new_parsed_list.append(
-                self.convert_elements(line, '全', ["火", "水", "風", "光", "闇"]))
-
-        print("new_parsed_list : ", new_parsed_list)
-
-        element_count_list = []
-        level_count_list = []
-        point_count_list = []
-        for line in new_parsed_list:
-            element_count = 0
-            level_count = 0
-            point_count = 0
-            for word in line:
-                if word in self.reg_elements:
-                    element_count += 1
-                if word in self.reg_levels:
-                    level_count += 1
-                if word in self.reg_points:
-                    point_count += 1
-            element_count_list.append(element_count)
-            level_count_list.append(level_count)
-            point_count_list.append(point_count)
-
-        output_list = []
-        repeating_pattern_elements = []
-        repeating_pattern_levels = []
-        config_pattern_type = -1
-        for i, line in enumerate(new_parsed_list):
-            prediction_set_elements = []
-            prediction_set_levels = []
-
-            if level_count_list[i] + point_count_list[i] == 0:  # 例:対風対火対水
-                config_pattern_type = 0
-                repeating_pattern_elements = line
-
-            elif element_count_list[i] + point_count_list[
-                    i] == 0:  # 例:180 190 200
-                config_pattern_type = 1
-                repeating_pattern_levels = line
-
-            elif config_pattern_type == 0:  # 例:180 1 2 3
-                element_pos = 0
-                for i, word in enumerate(line):
-                    if word in self.reg_levels:
-                        element_pos = i + 1
-                        prediction_set_levels.append(word)
-                    else:
-                        for level in prediction_set_levels:
-                            output_list.append({
-                                "element":
-                                repeating_pattern_elements[i - element_pos],
-                                "level":
-                                level,
-                                "point":
-                                word
-                            })
-
-            elif config_pattern_type == 1:  # 例:対風 対火 1 2 3
-                level_pos = 0
-                is_stop_element = False
-                for i, word in enumerate(line):
-                    if word in self.reg_elements and is_stop_element == False:
-                        level_pos = i + 1
-                        prediction_set_elements.append(word)
-                    else:
-                        is_stop_element = True
-                        for element in prediction_set_elements:
-                            output_list.append({
-                                "element":
-                                element,
-                                "level":
-                                repeating_pattern_levels[i - level_pos],
-                                "point":
-                                word
-                            })
-
-            elif config_pattern_type == -1:  # 例:対風 対火 180 1 190 2 対光 200 2
-                level_point_set = {}
-                level_point_is_processing = False
-                for word in line:
-                    if word in self.reg_elements:
-                        if level_point_is_processing:
-                            prediction_set_elements = []
-                        level_point_is_processing = False
-                        prediction_set_elements.append(word)
-                    else:
-                        level_point_is_processing = True
-                        if word in self.reg_levels:
-                            level_point_set["level"] = word
-                        else:
-                            level_point_set["point"] = word
-                        if len(level_point_set) == 2:
-                            for element in prediction_set_elements:
-                                output_list.append({
-                                    "element":
-                                    element,
-                                    "level":
-                                    level_point_set["level"],
-                                    "point":
-                                    level_point_set["point"]
-                                })
-                            level_point_set = {}
-        return output_list
-
-    def convert_elements(self, original_list, target_element, new_list):
-        result_list = []
-        for item in original_list:
-            if item == target_element:
-                result_list.extend(new_list)
-            else:
-                result_list.append(item)
-        return result_list
-
-    def get_point_set_list(self):
-        return self.point_set_list
-
-
-class MessageTimelineContainer:
-    def __init__(self, message, tl_author_other):
-        self.message = message
-        self.content = self.message.content
-        self.author = self.message.author.display_name
-
-        self.attack_types = ["スキル", "通攻"]
-        self.my_elements = ["火", "水", "風", "光", "闇"]
-        self.vs_elements = ["対火", "対水", "対風", "対光", "対闇"]
-        self.tl_levels = ["180", "190", "200", "250", "275", "300", "325"]
-        self.tl_points = ["1", "2", "3"]
-
-        self.words_to_keep_tl = self.attack_types+self.my_elements + \
-            self.vs_elements+self.tl_levels+self.tl_points
-
-        self.tl_visibility = ["全表示", "全部"]
-        self.tl_author_me = ["著", "私", "ぼく", "わたし",
-                             "俺", "おれ", "オレ", "わい", "わたくし", "自分"]
-        self.tl_author_other = tl_author_other
-        print(self.tl_author_other)
-
-        self.words_to_keep_search_tl = self.words_to_keep_tl + \
-            self.tl_visibility+self.tl_author_me+self.tl_author_other
-
-        self.json_string, self.is_tl = self.labeling_per_line(
-            self.content)  # json.dumps(
-        self.message_type = None
-        self.search_type_dict = {"attack_type": None, "enemy_element": None,
-                                 "enemy_level": None, "point": None, "author": None, "see_all": False}
-        if (self.is_tl):
-            self.tl_string = self.tl_all_printer(self.json_string)
-            self.message_type = "TL"
-            print(self.tl_string)
-        else:
-            self.message_type = self.analysis_message_type(self.content)
-
-    def analysis_message_type(self, text):
-        lines = text.splitlines()
-        line = lines[0]
-        please_list = ["表示", "欲しい", "要求", "please", "ほしい", "Please",
-                       "プリーズ", "ぷりーず", "お願い", "くれにゃ", "くれニャ", "ください", "所望", "下さい"]
-        pattern_please = '|'.join(map(re.escape, please_list))
-        match_please = re.findall(pattern_please, line)
-
-        delete_list = ["削除", "消し", "さくじょ", "消去",]
-        pattern_delete = '|'.join(map(re.escape, delete_list))
-        match_delete = re.findall(pattern_delete, line)
-
-        correction_list = ["修正", "直し", "なおし", "なおす", "訂正"]
-        pattern_correction = '|'.join(map(re.escape, correction_list))
-        match_correction = re.findall(pattern_correction, line)
-
-        if (len(match_delete) > 0):
-            self.analysis_enemy_type(line)
-            return "delete"
-        elif (len(match_please) > 0):
-            self.analysis_enemy_type(line)
-            return "please"
-        else:
-            return "none"
-        """
-        elif(len(match_correction)>0):
-            return "correction"
-        """
-
-    def analysis_enemy_type(self, line):
-
-        # 単語を正規表現のパターンに変換
-        pattern_tl = '|'.join(map(re.escape, self.words_to_keep_search_tl))
-        # 各行で単語を抽出し、リストに格納
-        result = re.findall(pattern_tl, line)
-        # それぞれの単語を適切な型に変換
-        result = [(word) if word.isdigit() else word for word in result]
-
-        for word in result:
-            if (word in self.attack_types):
-                self.search_type_dict["attack_type"] = word
-            elif (word in self.vs_elements):
-                self.search_type_dict["enemy_element"] = word
-            elif (word in self.my_elements):
-                self.search_type_dict["enemy_element"] = self.vs_elements[self.my_elements.index(
-                    word)]
-            elif (word in self.tl_levels):
-                self.search_type_dict["enemy_level"] = word
-            elif (word in self.tl_points):
-                self.search_type_dict["point"] = word
-            elif (word in self.tl_visibility):
-                self.search_type_dict["see_all"] = True
-            elif (word in self.tl_author_other):
-                self.search_type_dict["author"] = word
-            elif (word in self.tl_author_me):
-                self.search_type_dict["author"] = self.author
-            else:
-                pass
-
-    def labeling_per_line(self, text):
-        # 改行で分割
-        time_len = 0
-        lines = text.splitlines()
-        labeling_results = []
-        fight_times = {"1": 30, "2": 110, "3": 190}
-        correction_time = datetime.timedelta(minutes=0, seconds=0)
-
-        is_enemy_type_readed = False
-        is_timer_reading = False
-        is_first_timer_readed = False
-        is_re_timer = False
-        labeling_dict = {"attack_type": None, "enemy_element": None, "enemy_level": None, "point": "3",
-                         "author": str(self.message.author.display_name), "party": None, "remarks": [], "timeline": [],
-                         "post_date": str(datetime.date.today()), "discord_id": str(self.message.author),
-                         "visibility": True, "time": int(time.time())}
-        for i, line in enumerate(lines):
-            labeling_result = []
-            if (not is_enemy_type_readed):
-                # 単語を正規表現のパターンに変換
-                pattern_tl = '|'.join(map(re.escape, self.words_to_keep_tl))
-                # 各行で単語を抽出し、リストに格納
-                result = re.findall(pattern_tl, line)
-                # それぞれの単語を適切な型に変換
-                result = [(word) if word.isdigit()
-                          else word for word in result]
-                if (len(result)) >= 3:
-                    for word in result:
-                        if (word in self.attack_types):
-                            labeling_dict["attack_type"] = word
-                        elif (word in self.vs_elements):
-                            labeling_dict["enemy_element"] = word
-                        elif (word in self.my_elements):
-                            labeling_dict["enemy_element"] = self.vs_elements[self.my_elements.index(
-                                word)]
-                        elif (word in self.tl_levels):
-                            labeling_dict["enemy_level"] = word
-                        elif (word in self.tl_points):
-                            labeling_dict["point"] = word
-                            if (word == "3"):
-                                is_re_timer = True
-                        else:
-                            pass
-                    is_enemy_type_readed = True
-                else:
-                    pass
-            else:
-                # 同じ文字が8回以上連続するパターン
-                pattern_partition = r'(.)\1{7,}'
-                # パターンにマッチするすべての部分を検索
-                matches_partition = re.findall(pattern_partition, line)
-
-                # 分:秒の形式を表す正規表現パターン
-                pattern_time = r'\b\d{1}[:：]\d{2}\b'
-                pattern_time_sub = r'\b\d{1,2}[:：]\d{2}\b\s*'
-                # パターンにマッチするすべての部分を検索
-                matches_time = re.findall(pattern_time, line)
-
-                pattern_party = "編成"
-                matches_party = re.findall(pattern_party, line)
-
-                if (len(matches_time) > 0):
-                    is_timer_reading = True
-                    timer_string = matches_time[0]
-                    line = re.sub(pattern_time_sub, '', line)
-                    # 分と秒を分離
-                    minutes, seconds = map(int, re.split(
-                        r'[:：]', timer_string))  # コロンで分割
-                    left_minutes = minutes * 60 + seconds
-
-                    if (not is_first_timer_readed):
-                        if (abs(fight_times[labeling_dict["point"]]-left_minutes) <= abs(fight_times["3"]-left_minutes)):
-                            is_re_timer = True
-                        else:
-                            is_re_timer = False
-                        is_first_timer_readed = True
-                        correction_time = fight_times["3"] - \
-                            fight_times[labeling_dict["point"]]
-
-                    time_obj_minutes, time_obj_seconds = divmod(
-                        left_minutes, 60)
-                    if (labeling_dict["point"] != "3"):
-                        if (not is_re_timer):
-                            im_time_obj_minutes, im_time_obj_seconds = divmod(
-                                (left_minutes-correction_time), 60)
-                            line = str(time_obj_minutes)+":"+str(time_obj_seconds).zfill(2)+"\t"+str(
-                                im_time_obj_minutes)+":"+str(im_time_obj_seconds).zfill(2)+line
-                        else:
-                            re_time_obj_minutes, re_time_obj_seconds = divmod(
-                                (left_minutes+correction_time), 60)
-                            line = str(re_time_obj_minutes)+":"+str(re_time_obj_seconds).zfill(
-                                2)+"\t"+str(time_obj_minutes)+":"+str(time_obj_seconds).zfill(2)+line
-                    else:
-                        line = str(time_obj_minutes)+":" + \
-                            str(time_obj_seconds).zfill(2)+"\t"+line
-                    labeling_result = ["timeline", line]
-
-                elif (len(matches_partition) > 0):
-                    labeling_result = ["partition1", line]
-                elif (len(line) == 0):
-                    labeling_result = ["partition2", line]
-                elif (len(matches_party) > 0):
-                    labeling_result = ["party", line]
-                elif (is_enemy_type_readed):
-                    if (is_timer_reading):
-                        labeling_result = ["supplement", line]
-                    else:
-                        labeling_result = ["remarks", line]
-
-            if (len(labeling_result) != 0):
-                labeling_results.append(labeling_result)
-
-        for result in labeling_results:
-            if (result[0] == "remarks"):
-                labeling_dict["remarks"].append(result[1])
-            elif (result[0] == "timeline"):
-                time_len += 1
-                labeling_dict["timeline"].append(result[1])
-            elif (result[0] == "partition1"):
-                labeling_dict["timeline"].append(result[1])
-            elif (result[0] == "partition2"):
-                labeling_dict["timeline"].append(result[1])
-            elif (result[0] == "party"):
-                labeling_dict["party"] = result[1]
-            elif (result[0] == "supplement"):
-                labeling_dict["timeline"].append(result[1])
-        if (time_len < 3):
-            return None, False
-        else:
-            return labeling_dict, True
-
-    def tl_all_printer(self, doc):
-        output_string = ""
-        output_string += "【"
-        if (doc["attack_type"] != None):
-            output_string += doc["attack_type"]
-        output_string += doc["enemy_element"]+doc["enemy_level"]
-        output_string += "の"
-        output_string += doc["point"]+"P "
-        output_string += doc["author"]
-        output_string += "著 "
-        output_string += "作成日"
-        output_string += doc["post_date"]+"】\n"
-        output_string += doc["party"]+"\n"
-        for text in doc["remarks"]:
-            output_string += text+"\n"
-        output_string += "\n"
-        for timeline in doc["timeline"]:
-            output_string += timeline+"\n"
-        return output_string
 
 
 class MyBot(commands.Bot):
@@ -455,11 +60,11 @@ class messageManager(commands.Cog):
                 return
             elif self.message.channel.name == "戦力報告専用":
                 self.author_name = str(self.message.author.display_name)
-                self.author_id = str(self.message.author)
+                self.author_user_id = str(self.message.author)
                 await self.on_point_message()
             elif self.message.channel.name == "タイムライン管理所":
                 self.author_name = str(self.message.author.display_name)
-                self.author_id = str(self.message.author)
+                self.author_user_id = str(self.message.author)
                 await self.on_timeline_message()
             else:
                 return
@@ -481,14 +86,14 @@ class messageManager(commands.Cog):
 
             self.is_meow = meow.meowmeow_check(str(self.message.content))
             is_agent = False
-            is_sudo = str(self.message.author) in super_user
+            is_sudo = str(self.author_user_id) in super_user
             self.return_message = f"{self.message.author.mention} "
             self.return_view = View()
 
             self.registrant_name = str(self.message.author.display_name)
-            self.registrant_id = str(self.message.author)
+            self.registrant_user_id = str(self.author_user_id)
 
-            print("送信者の名前 : ", self.registrant_name, self.author_id)
+            print("送信者の名前 : ", self.registrant_name, self.author_user_id)
 
             if "代理" in found_commands:
                 if (is_sudo):
@@ -497,10 +102,10 @@ class messageManager(commands.Cog):
 
                         if(self.spread_content.id_exists(registrant_name_or_id)):
                             self.registrant_name = self.spread_content.convert_id_to_name(registrant_name_or_id)
-                            self.registrant_id = registrant_name_or_id
+                            self.registrant_user_id = registrant_name_or_id
                         elif(self.spread_content.name_exists(registrant_name_or_id)):
                             self.registrant_name = registrant_name_or_id
-                            self.registrant_id = ""
+                            self.registrant_user_id = ""
                         else:
                             self.return_message += meow.meowmeow_accent("ERROR: その人物は存在しないです！", self.is_meow)
                             await self.message.channel.send(self.return_message,view=self.return_view)
@@ -596,12 +201,12 @@ class messageManager(commands.Cog):
         if (is_registered_name):
             self.return_message += meow.meowmeow_accent("ERROR: 既に登録されています！", self.is_meow)
         else:
-            self.return_view.add_item(DynamicOkButton(self.bot, self.message.author.id, self.is_meow, self.register_name, registrant_name=registrant_name))
+            self.return_view.add_item(DynamicOkButton(self.bot, self.author_user_id, self.is_meow, self.register_name, registrant_name=registrant_name))
             self.return_message += meow.meowmeow_accent(f"{registrant_name}さんを登録しますか？", self.is_meow)
     
     def register_name(self, registrant_name):
         try:
-            send_message = self.spread_content.registered_name(registrant_name, self.registrant_id)
+            send_message = self.spread_content.registered_name(registrant_name, self.registrant_user_id)
             return send_message,View()
         except Exception as e:
             error_message = traceback.format_exc()
@@ -614,7 +219,7 @@ class messageManager(commands.Cog):
         if (cell_pos < 0):
             self.return_message += meow.meowmeow_accent("ERROR: 名前が見つかりませんでした。",self.is_meow)
         else:
-            self.return_view.add_item(DynamicOkButton(self.bot, self.message.author.id, self.is_meow, self.delete_name, delete_name=delete_name))
+            self.return_view.add_item(DynamicOkButton(self.bot, self.author_user_id, self.is_meow, self.delete_name, delete_name=delete_name))
             self.return_message += meow.meowmeow_accent(f"{delete_name}さんを削除しますか？",self.is_meow)
 
     def delete_name(self, delete_name):
@@ -669,7 +274,7 @@ class messageManager(commands.Cog):
                                     "point"] + "\n"
                     self.return_message += return_row_message
 
-                self.return_view.add_item(DynamicOkButton(self.bot, self.message.author.id, self.is_meow, self.register_point, unupdated_list=unupdated_list))
+                self.return_view.add_item(DynamicOkButton(self.bot, self.author_user_id, self.is_meow, self.register_point, unupdated_list=unupdated_list))
 
 
     def register_point(self, unupdated_list):
@@ -725,7 +330,7 @@ class messageManager(commands.Cog):
     def register_timeline_check(self):
         self.return_message += meow.meowmeow_accent("以下のタイムラインを登録しますか？\n",self.is_meow)
         self.return_message += self.messageTimelineContainer.tl_string
-        self.return_view.add_item(DynamicOkButton(self.bot, self.message.author.id, self.is_meow, self.register_timeline))
+        self.return_view.add_item(DynamicOkButton(self.bot, self.author_user_id, self.is_meow, self.register_timeline))
 
     def register_timeline(self):
         try:
@@ -787,7 +392,7 @@ class messageManager(commands.Cog):
 
             self.return_message += meow.meowmeow_accent("表示したいタイムラインを選択してください\n",self.is_meow)
 
-            self.return_view.add_item(DynamicSelectMenu(self.bot, self.message.author.id, self.is_meow, self.please_timeline, options))
+            self.return_view.add_item(DynamicSelectMenu(self.bot, self.author_user_id, self.is_meow, self.please_timeline, options))
 
 
     def please_timeline(self,selected_value):
@@ -847,13 +452,13 @@ class messageManager(commands.Cog):
                 self.return_message += meow.meowmeow_accent("の条件で検索しました\n",self.is_meow)
 
         self.return_message += meow.meowmeow_accent("削除したいタイムラインを選択してください\n",self.is_meow)
-        print(self.message.author.id)
-        self.return_view.add_item(DynamicSelectMenu(self.bot, self.message.author.id, self.is_meow, self.really_delete_check, options, id = self.message.author.id))
+        print(self.author_user_id)
+        self.return_view.add_item(DynamicSelectMenu(self.bot, self.author_user_id, self.is_meow, self.really_delete_check, options, id = self.author_user_id))
 
     def really_delete_check(self, selected_value, id):
         send_message = meow.meowmeow_accent("本当にこのタイムラインを削除しますか？\n", self.is_meow)
         self.return_view = View()
-        print(self.message.author.id)
+        print(self.author_user_id, id)
         self.return_view.add_item(DynamicOkButton(self.bot, id, self.is_meow, self.delete_timeline, id = ObjectId(selected_value)))
         return send_message, self.return_view
 
@@ -863,89 +468,6 @@ class messageManager(commands.Cog):
         return send_message,View()
     
 
-
-"""
-class RenameOKButton(ui.Button):
-
-    def __init__(self,
-                    *,
-                    label='OK',
-                    spread_sheet: SpreadContent,
-                    old_name: str,
-                    new_name: str,
-                    is_meow: bool,
-                    **kwargs):
-        self.spread_sheet = spread_sheet
-        self.old_name = old_name
-        self.new_name = new_name
-        self.is_meow = is_meow
-        super().__init__(label=label, **kwargs)
-
-    async def callback(self, interaction: Interaction):
-        try:
-            await interaction.response.defer(thinking=True)
-            send_message = self.spread_sheet.rename_name(
-                old_name=self.old_name,
-                new_name=self.new_name,
-                is_meow=self.is_meow)
-
-            await interaction.followup.send(content=send_message)
-            self.view.stop()
-        except Exception as e:
-            error_message = traceback.format_exc()
-            await interaction.followup.send(content=f"予期しないエラーが発生しました: {e}\n"+error_message)
-            print(f"予期しないエラーが発生しました: {e}\n"+error_message)
-"""
-
-class DynamicOkButton(Button):
-    def __init__(self, bot, author_id, is_meow, action,**kwargs):
-        self.bot = bot
-        self.user_id = author_id
-        self.is_meow = is_meow
-        self.action = action  # 実行する関数
-        self.kwargs = kwargs  # 必要な追加情報
-        super().__init__(label="OK", style=discord.ButtonStyle.green)
-
-    async def callback(self, interaction: discord.Interaction):
-        try:
-            print(interaction.user.id,self.user_id)
-            if interaction.user.id != self.user_id:
-                pass
-            else:
-                # 動的に設定された処理を実行
-                await interaction.response.defer(thinking=True)
-                return_view = View()
-                return_message, return_view = self.action(**self.kwargs)
-                await interaction.followup.send(content=return_message, view=return_view)
-        except Exception as e:
-            error_message = traceback.format_exc()
-            await interaction.followup.send(content=f"予期しないエラーが発生しました: {e}\n"+error_message)
-            print(f"予期しないエラーが発生しました: {e}\n"+error_message)
-
-class DynamicSelectMenu(Select):
-    def __init__(self, bot, author_id, is_meow, action, options ,**kwargs):
-        super().__init__(options = options)
-        self.bot = bot
-        self.user_id = author_id
-        self.is_meow = is_meow
-        self.action = action  # 実行する関数
-        self.options = options
-        self.kwargs = kwargs
-
-    async def callback(self, interaction: discord.Interaction):
-        print(interaction.user.id,self.user_id)
-        if interaction.user.id != self.user_id:
-            pass
-        else:
-            try:
-                await interaction.response.defer(thinking=True)
-                return_view=View()
-                return_message,return_view = self.action(self.values[0] , **self.kwargs)
-                await interaction.followup.send(content=return_message, view=return_view)
-            except Exception as e:
-                error_message = traceback.format_exc()
-                await interaction.followup.send(content=f"予期しないエラーが発生しました: {e}\n"+error_message)
-                print(f"予期しないエラーが発生しました: {e}\n"+error_message)
 
 
 
