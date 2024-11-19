@@ -74,6 +74,10 @@ class SpreadContent:
         ss_id_list = ss_id_list[2:ss_id_list.index(".")]
         return ss_id_list
 
+    def read_name_max_len(self):
+        ss_name_list = self.ss.col_values(2)
+        return ss_name_list.index(".")-2
+
     def convert_id_to_name(self, id):
         cell_pos = self.find_id_pos(id)
         ss_name_list = self.read_name()
@@ -227,6 +231,25 @@ class SpreadContent:
         # 更新処理
         self.ss.update(cell_range, update_values,
                        value_input_option='USER_ENTERED')
+
+    def read_strong_attributes_cells(self, level):
+        id_list=self.read_id()
+        strong_attributes_dict={}
+        level_index=levels.index(level)
+        strong_attributes_x_pos = self.x_pos + 2 + 5*len(levels) + 1 + 5*len(levels) + 1 + 5*len(levels) + 1 + level_index
+
+        strong_attributes_list = self.ss.col_values(strong_attributes_x_pos)
+        strong_attributes_list = strong_attributes_list[2:strong_attributes_list.index(".")]
+        
+        attribute_list=["火","水","風","光","闇"]
+        for i, strong_attributes in enumerate(strong_attributes_list):
+            found_attribute = [char for char in strong_attributes if char in attribute_list]
+            for j, attribute in enumerate(found_attribute):
+                found_attribute[j] = "対" + attribute
+            if(len(id_list[i]) != 0):
+                strong_attributes_dict[id_list[i]] = found_attribute    
+        print(strong_attributes_dict)
+        return strong_attributes_dict
 
     def get_cells(self, start_x, start_y, len_x, len_y):
         end_x = start_x+len_x-1

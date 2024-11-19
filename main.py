@@ -4,15 +4,10 @@ import discord
 from keep import keep_alive
 
 from discord.ext import commands
-from discord import ui, Interaction
 from discord.ui import Button,Select,View
 import csv
-import random
 import jaconv
-import datetime
-import time
 import traceback
-import json
 from bson import ObjectId
 
 from SpreadContent import SpreadContent
@@ -46,6 +41,73 @@ class MyBot(commands.Bot):
         # Botが起動する際に、Cogをロード
         await self.add_cog(messageManager(self))
 
+    async def list_members(self, guild_id):
+        """指定サーバー内のメンバー情報（名前、ID、ロール）を表示"""
+        guild = self.get_guild(guild_id)  # 特定のサーバーを取得
+
+        if guild is None:
+            print("指定されたサーバーが見つかりません。")
+            return
+
+        members_info = []
+        for member in guild.members:
+            roles = [role.name for role in member.roles if role.name != "@everyone"]
+            member_info = f"名前: {member.display_name}, ID: {member.id}, ユーザー名: {str(member)}, ロール: {', '.join(roles) or 'なし'}"
+            members_info.append(member_info)
+        
+        # メンバー情報をコンソールに表示
+        print(f"サーバー: {guild.name} のメンバー情報\n" + "\n".join(members_info))
+
+
+    async def add_role(self, guild_id: int, member_id: int, role_name: str):
+        """指定サーバー内の特定のメンバーにロールを付与"""
+        guild = self.get_guild(guild_id)
+
+        if guild is None:
+            print("指定されたサーバーが見つかりません。")
+            return
+
+        member = guild.get_member(member_id)
+        role = discord.utils.get(guild.roles, name=role_name)
+
+        if member is None:
+            print("指定されたIDのメンバーが見つかりません。")
+            return
+        if role is None:
+            print("指定された名前のロールが見つかりません。")
+            return
+
+        if role not in member.roles:
+            await member.add_roles(role)
+            print(f"{member.display_name} にロール '{role.name}' を付与しました。")
+        else:
+            print(f"{member.display_name} は既にロール '{role.name}' を持っています。")
+
+    async def remove_role(self, guild_id: int, member_id: int, role_name: str):
+        """指定サーバー内の特定のメンバーからロールを削除"""
+        guild = self.get_guild(guild_id)
+
+        if guild is None:
+            print("指定されたサーバーが見つかりません。")
+            return
+
+        member = guild.get_member(member_id)
+        role = discord.utils.get(guild.roles, name=role_name)
+
+        if member is None:
+            print("指定されたIDのメンバーが見つかりません。")
+            return
+        if role is None:
+            print("指定された名前のロールが見つかりません。")
+            return
+
+        if role in member.roles:
+            await member.remove_roles(role)
+            print(f"{member.display_name} からロール '{role.name}' を削除しました。")
+        else:
+            print(f"{member.display_name} はロール '{role.name}' を持っていません。")
+
+
 class messageManager(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -59,6 +121,7 @@ class messageManager(commands.Cog):
             if self.message.author.bot:
                 return
             elif self.message.channel.name == "戦力報告専用":
+                #self.spread_content.read_strong_attributes_cells("300")
                 self.author_name = str(self.message.author.display_name)
                 self.author_user_id = str(self.message.author)
                 await self.on_point_message()
@@ -78,7 +141,7 @@ class messageManager(commands.Cog):
         try:
             await self.message.add_reaction("🤔")
             
-            command_names=["代理","名前登録","csv","生存確認","名前確認","名前変更","名前削除"]
+            command_names=["代理","名前登録","csv","生存確認","名前確認","名前変更","名前削除","ロール表示"]
             # 正規表現でダブルクォーテーションで囲まれた部分をすべて抽出
             command_arg_matches = re.findall(r'["\'\[\](){}<>]([^\0"\[\]\'\(\)\{\}<>]+)["\'\[\](){}<>]', str(self.message.content))
             # コマンド名がメッセージ内に含まれているかチェック
@@ -92,6 +155,7 @@ class messageManager(commands.Cog):
 
             self.registrant_name = str(self.message.author.display_name)
             self.registrant_user_id = str(self.author_user_id)
+            self.message_guild_id = self.message.guild.id
 
             print("送信者の名前 : ", self.registrant_name, self.author_user_id)
 
@@ -155,6 +219,11 @@ class messageManager(commands.Cog):
                         self.return_message += meow.meowmeow_accent("ERROR: 権限がありません！", self.is_meow)
                     await self.message.channel.send(self.return_message,view=self.return_view)
                     return
+                elif "ロール表示" in found_commands:
+                    await self.bot.list_members(self.message_guild_id)
+                    #self.return_message += meow.meowmeow_accent("", self.is_meow)
+                    await self.message.remove_reaction("🤔", self.message.guild.me)
+                    await self.message.channel.send(self.return_message,view=self.return_view)
                 """
                 elif '名前変更' in found_commands:
                     if (not self.spread_content.name_exists(registrant_name)):
