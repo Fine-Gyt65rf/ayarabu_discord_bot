@@ -229,7 +229,7 @@ class messageManager(commands.Cog):
                     return
 
                 elif "ロール表示" in found_commands:
-                    await self.bot.list_members(self.message_guild_id)
+                    dust_list = self.bot.list_members(self.message_guild_id)
                     #self.return_message += meow.meowmeow_accent("", self.is_meow)
                     await self.message.remove_reaction("🤔", self.message.guild.me)
                     await self.message.channel.send(self.return_message,view=self.return_view)
@@ -258,7 +258,8 @@ class messageManager(commands.Cog):
                             for item in assignment_roles_list[user_name]:
                                 if item not in member_roles_list[user_name] and item in include_elements:
                                     add_roles_list.append(item)
-                            self.return_message += "\n"
+                            if(role in add_roles_list or role in delete_roles_list):
+                                self.return_message += "\n"
                             for role in add_roles_list:
                                 self.return_message += meow.meowmeow_accent(await self.bot.add_role(self.message_guild_id,user_name,role), self.is_meow)
                             for role in delete_roles_list:
