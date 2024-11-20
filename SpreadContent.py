@@ -246,9 +246,10 @@ class SpreadContent:
             found_attribute = [char for char in strong_attributes if char in attribute_list]
             for j, attribute in enumerate(found_attribute):
                 found_attribute[j] = "対" + attribute
+            found_attribute += ["同盟在籍者"]
             if(len(id_list[i]) != 0):
-                strong_attributes_dict[id_list[i]] = found_attribute    
-        print(strong_attributes_dict)
+                strong_attributes_dict[id_list[i]] = found_attribute 
+        #print(strong_attributes_dict)
         return strong_attributes_dict
 
     def get_cells(self, start_x, start_y, len_x, len_y):

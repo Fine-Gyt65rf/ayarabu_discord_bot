@@ -41,7 +41,7 @@ class MyBot(commands.Bot):
         # Botが起動する際に、Cogをロード
         await self.add_cog(messageManager(self))
 
-    async def list_members(self, guild_id):
+    def list_members(self, guild_id):
         """指定サーバー内のメンバー情報（名前、ID、ロール）を表示"""
         guild = self.get_guild(guild_id)  # 特定のサーバーを取得
 
@@ -50,16 +50,20 @@ class MyBot(commands.Bot):
             return
 
         members_info = []
+        member_roles_list={}
         for member in guild.members:
             roles = [role.name for role in member.roles if role.name != "@everyone"]
+            member_roles_list[str(member)]=roles
             member_info = f"名前: {member.display_name}, ID: {member.id}, ユーザー名: {str(member)}, ロール: {', '.join(roles) or 'なし'}"
             members_info.append(member_info)
         
         # メンバー情報をコンソールに表示
-        print(f"サーバー: {guild.name} のメンバー情報\n" + "\n".join(members_info))
+        # print(f"サーバー: {guild.name} のメンバー情報\n" + "\n".join(members_info))
+
+        return member_roles_list
 
 
-    async def add_role(self, guild_id: int, member_id: int, role_name: str):
+    async def add_role(self, guild_id: int, member_user_name: str, role_name: str):
         """指定サーバー内の特定のメンバーにロールを付与"""
         guild = self.get_guild(guild_id)
 
@@ -67,45 +71,49 @@ class MyBot(commands.Bot):
             print("指定されたサーバーが見つかりません。")
             return
 
-        member = guild.get_member(member_id)
+        member = guild.get_member_named(member_user_name)
         role = discord.utils.get(guild.roles, name=role_name)
 
         if member is None:
-            print("指定されたIDのメンバーが見つかりません。")
-            return
+            print("指定されたIDのメンバーが見つかりません。\n")
+            return "指定されたIDのメンバーが見つかりません。\n"
         if role is None:
-            print("指定された名前のロールが見つかりません。")
-            return
+            print("指定された名前のロールが見つかりません。\n")
+            return "指定された名前のロールが見つかりません。\n"
 
         if role not in member.roles:
             await member.add_roles(role)
-            print(f"{member.display_name} にロール '{role.name}' を付与しました。")
+            print(f"{member.display_name} にロール {role.name} を付与しました。\n")
+            return f"{member.display_name} にロール {role.name} を付与しました。\n"
         else:
-            print(f"{member.display_name} は既にロール '{role.name}' を持っています。")
+            print(f"{member.display_name} は既にロール {role.name} を持っています。\n")
+            return f"{member.display_name} は既にロール {role.name} を持っています。\n"
 
-    async def remove_role(self, guild_id: int, member_id: int, role_name: str):
+    async def delete_role(self, guild_id: int, member_user_name: str, role_name: str):
         """指定サーバー内の特定のメンバーからロールを削除"""
         guild = self.get_guild(guild_id)
 
         if guild is None:
             print("指定されたサーバーが見つかりません。")
-            return
+            return "指定されたサーバーが見つかりません。"
 
-        member = guild.get_member(member_id)
+        member = guild.get_member_named(member_user_name)
         role = discord.utils.get(guild.roles, name=role_name)
 
         if member is None:
-            print("指定されたIDのメンバーが見つかりません。")
-            return
+            print("指定されたIDのメンバーが見つかりません。\n")
+            return "指定されたIDのメンバーが見つかりません。\n"
         if role is None:
-            print("指定された名前のロールが見つかりません。")
-            return
+            print("指定された名前のロールが見つかりません。\n")
+            return "指定された名前のロールが見つかりません。\n"
 
         if role in member.roles:
             await member.remove_roles(role)
-            print(f"{member.display_name} からロール '{role.name}' を削除しました。")
+            print(f"{member.display_name} からロール {role.name} を削除しました。\n")
+            return f"{member.display_name} からロール {role.name} を削除しました。\n"
         else:
-            print(f"{member.display_name} はロール '{role.name}' を持っていません。")
+            print(f"{member.display_name} はロール {role.name} を持っていません。\n")
+            return f"{member.display_name} はロール {role.name} を持っていません。\n"
 
 
 class messageManager(commands.Cog):
@@ -141,7 +149,7 @@ class messageManager(commands.Cog):
         try:
             await self.message.add_reaction("🤔")
             
-            command_names=["代理","名前登録","csv","生存確認","名前確認","名前変更","名前削除","ロール表示"]
+            command_names=["代理","名前登録","csv","生存確認","名前確認","名前変更","名前削除","ロール表示","ロール付与"]
             # 正規表現でダブルクォーテーションで囲まれた部分をすべて抽出
             command_arg_matches = re.findall(r'["\'\[\](){}<>]([^\0"\[\]\'\(\)\{\}<>]+)["\'\[\](){}<>]', str(self.message.content))
             # コマンド名がメッセージ内に含まれているかチェック
@@ -219,9 +227,50 @@ class messageManager(commands.Cog):
                         self.return_message += meow.meowmeow_accent("ERROR: 権限がありません！", self.is_meow)
                     await self.message.channel.send(self.return_message,view=self.return_view)
                     return
+
                 elif "ロール表示" in found_commands:
                     await self.bot.list_members(self.message_guild_id)
                     #self.return_message += meow.meowmeow_accent("", self.is_meow)
+                    await self.message.remove_reaction("🤔", self.message.guild.me)
+                    await self.message.channel.send(self.return_message,view=self.return_view)
+                    
+                elif "ロール付与" in found_commands:
+                    role_level = "300"
+                    if(len(command_arg_matches)!=0):
+                        role_level = command_arg_matches.pop(0)
+                    
+                    assignment_roles_list = self.spread_content.read_strong_attributes_cells(str(role_level))
+                    member_roles_list = self.bot.list_members(self.message_guild_id)
+
+                    for user_name in member_roles_list:
+                        if user_name in assignment_roles_list:
+                            print(user_name)
+                            include_elements = ["同盟在籍者","対火","対水","対風","対光","対闇"]  # 除外しない要素
+
+                            # member_roles_list[user_name]にあってassignment_roles_list[user_name]にはない要素をdelete_roles_listに格納（ただしinclude_elementsに含まれるもののみ）
+                            delete_roles_list = []
+                            for item in member_roles_list[user_name]:
+                                if item not in assignment_roles_list[user_name] and item in include_elements:
+                                    delete_roles_list.append(item)
+
+                            # assignment_roles_list[user_name]にあってmember_roles_list[user_name]にはない要素をadd_roles_listに格納（ただしinclude_elementsに含まれるもののみ）
+                            add_roles_list = []
+                            for item in assignment_roles_list[user_name]:
+                                if item not in member_roles_list[user_name] and item in include_elements:
+                                    add_roles_list.append(item)
+                            self.return_message += "\n"
+                            for role in add_roles_list:
+                                self.return_message += meow.meowmeow_accent(await self.bot.add_role(self.message_guild_id,user_name,role), self.is_meow)
+                            for role in delete_roles_list:
+                                self.return_message += meow.meowmeow_accent(await self.bot.delete_role(self.message_guild_id,user_name,role), self.is_meow)
+                        else:
+                            include_elements = ["同盟在籍者","対火","対水","対風","対光","対闇"]  # 除外しない要素
+                            for role in member_roles_list[user_name]:
+                                if role in include_elements:
+                                    self.return_message += meow.meowmeow_accent(await self.bot.delete_role(self.message_guild_id,user_name,role), self.is_meow)
+
+                    #print(member_roles_list, assignment_roles_list)
+                    self.return_message += meow.meowmeow_accent("すべてのロールを付与しました！", self.is_meow)
                     await self.message.remove_reaction("🤔", self.message.guild.me)
                     await self.message.channel.send(self.return_message,view=self.return_view)
                 """
