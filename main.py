@@ -258,7 +258,7 @@ class messageManager(commands.Cog):
                             for item in assignment_roles_list[user_name]:
                                 if item not in member_roles_list[user_name] and item in include_elements:
                                     add_roles_list.append(item)
-                            if(role in add_roles_list or role in delete_roles_list):
+                            if(len(add_roles_list) != 0 or len(delete_roles_list) != 0):
                                 self.return_message += "\n"
                             for role in add_roles_list:
                                 self.return_message += meow.meowmeow_accent(await self.bot.add_role(self.message_guild_id,user_name,role), self.is_meow)
