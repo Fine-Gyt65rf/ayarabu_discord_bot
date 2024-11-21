@@ -195,6 +195,7 @@ class messageManager(commands.Cog):
             if(len(found_commands)!=0):
                 if '名前登録' in found_commands:
                     if(is_sudo):
+                        self.registrant_user_id=""
                         if(len(command_arg_matches)!=0):
                             self.register_name_check(command_arg_matches[0])
                         else:
@@ -347,8 +348,9 @@ class messageManager(commands.Cog):
             return send_message,View()
         except Exception as e:
             error_message = traceback.format_exc()
-            return f"予期しないエラーが発生しました: {e}\n" + error_message,View()
             print(f"予期しないエラーが発生しました: {e}\n"+error_message)
+            return f"予期しないエラーが発生しました: {e}\n" + error_message,View()
+
 
     def print_csv(self):
         self.spread_content.get_name_len()
