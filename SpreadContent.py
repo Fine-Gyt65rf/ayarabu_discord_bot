@@ -121,14 +121,28 @@ class SpreadContent:
             return -1
 
     def delete_name(self, name):
+        def unify_list_rows(matrix: list[list[str]], fixed_length: int) -> list[list[str]]:
+            new_matrix = []
+
+            for row in matrix:
+                # 1. 行を指定した長さで切り出す
+                new_row = row[:fixed_length]
+                # 2. 長さが足りない場合は、空文字で補う
+                while len(new_row) < fixed_length:
+                    new_row.append("")  
+                # 3. 整形した行を新しいリストに追加
+                new_matrix.append(new_row)
+
+            return new_matrix
         self.get_name_len()
         all_spread_data = self.get_cells(
             self.x_pos, self.y_pos, self.x_len, self.name_len)
+        all_spread_data = unify_list_rows(all_spread_data, 2+len(levels)*5)
         cell_pos = self.find_name_pos(name) - self.y_pos
         removed_data = all_spread_data.pop(cell_pos)
         print("削除する人の名前：", name, "リムーブされた名前：", removed_data)
         all_spread_data.append([""]*(2+len(levels)*5))
-        print(all_spread_data)
+        #print(all_spread_data)
 
         if (cell_pos < 0):
             return_message = "ERROR: 名前が見つかりませんでした。"
@@ -187,8 +201,7 @@ class SpreadContent:
         """
 
         y_cell_pos = self.find_name_pos(user_name)
-
-        if (y_cell_pos == 0):  # リストに未登録の名前
+        if (y_cell_pos == -1):  # リストに未登録の名前
             return False, []
         else:
             unupdated_list = []

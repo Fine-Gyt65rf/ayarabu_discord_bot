@@ -31,7 +31,8 @@ class MyBot(commands.Bot):
 
     def __init__(self, command_prefix='!', *args, **kwargs):
         super().__init__(command_prefix, *args, **kwargs)
-
+        self.spread_content = SpreadContent()
+        self.mongo_db = MongoDB()
 
     async def on_ready(self):
         print(f'ログインしました: {self.user}')
@@ -40,6 +41,7 @@ class MyBot(commands.Bot):
     async def setup_hook(self):
         # Botが起動する際に、Cogをロード
         await self.add_cog(messageManager(self))
+        await self.add_cog(memberManager(self))
 
     def list_members(self, guild_id):
         """指定サーバー内のメンバー情報（名前、ID、ロール）を表示"""
@@ -119,8 +121,8 @@ class MyBot(commands.Bot):
 class messageManager(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.spread_content = SpreadContent()
-        self.mongo_db = MongoDB()
+        self.spread_content = self.bot.spread_content
+        self.mongo_db = self.bot.mongo_db
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -148,8 +150,8 @@ class messageManager(commands.Cog):
     async def on_point_message(self):
         try:
             await self.message.add_reaction("🤔")
-            
-            command_names=["代理","名前登録","csv","生存確認","名前確認","名前変更","名前削除","ロール表示","ロール付与"]
+
+            command_names=["代理","名前登録","csv","生存確認","名前変更","名前削除","ロール表示","ロール付与",]
             # 正規表現でダブルクォーテーションで囲まれた部分をすべて抽出
             command_arg_matches = re.findall(r'["\'\[\](){}<>]([^\0"\[\]\'\(\)\{\}<>]+)["\'\[\](){}<>]', str(self.message.content))
             # コマンド名がメッセージ内に含まれているかチェック
@@ -195,7 +197,7 @@ class messageManager(commands.Cog):
             if(len(found_commands)!=0):
                 if '名前登録' in found_commands:
                     if(is_sudo):
-                        self.registrant_user_id=""
+                        self.registrant_user_id = ""
                         if(len(command_arg_matches)!=0):
                             self.register_name_check(command_arg_matches[0])
                         else:
@@ -223,7 +225,7 @@ class messageManager(commands.Cog):
                         if(len(command_arg_matches)!=0):
                             self.delete_name_check(command_arg_matches[0])
                         else:
-                            self.return_message += meow.meowmeow_accent("ERROR: 登録しようとしている名前が記述されていません！", self.is_meow)
+                            self.return_message += meow.meowmeow_accent("ERROR: 削除しようとしている名前が記述されていません！", self.is_meow)
                     else:
                         self.return_message += meow.meowmeow_accent("ERROR: 権限がありません！", self.is_meow)
                     await self.message.channel.send(self.return_message,view=self.return_view)
@@ -377,19 +379,22 @@ class messageManager(commands.Cog):
         print(self.message.content)
         messagePointContainer = MessagePointContainer(self.message.content)
         point_set_list = messagePointContainer.get_point_set_list()
+        print(point_set_list)
         if (len(point_set_list) > 0):
             is_registered_name, unupdated_list = self.spread_content.find_point(self.registrant_name, point_set_list)
+            
+            if (is_registered_name == False):
+                self.return_message += meow.meowmeow_accent("ERROR: 名前が見つかりませんでした。\n申し訳ないですが対応をお待ちください。翌日にはできるようになっているはずです",self.is_meow)
 
-            if (len(unupdated_list) == 0 and len(point_set_list) > 0):
+            elif (len(unupdated_list) == 0 and len(point_set_list) > 0):
                 self.return_message += meow.meowmeow_accent(f"最新の状態です！",self.is_meow)
 
-            elif (is_registered_name):
+            else:
                 self.return_message += meow.meowmeow_accent(f"以下の内容でよいなら更新をポチっと押してください\n",self.is_meow)
                 self.return_message += self.registrant_name + "さん\n"
                 for unupdated_point in unupdated_list:
                     return_row_message = ""
-                    return_row_message = unupdated_point[
-                        "element"] + unupdated_point[
+                    return_row_message = unupdated_point["element"] + unupdated_point[
                             "level"] + "\t" + unupdated_point[
                                 "registered_point"] + "→" + unupdated_point[
                                     "point"] + "\n"
@@ -589,6 +594,21 @@ class messageManager(commands.Cog):
         return send_message,View()
     
 
+class memberManager(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+        self.spread_content = self.bot.spread_content
+        self.mongo_db = self.bot.mongo_db
+
+    @commands.Cog.listener()
+    async def on_member_join(self, member: discord.Member):
+        # "general" というテキストチャンネルを取得して
+        # 新規参加者に対してメッセージを送信
+        channel = discord.utils.get(member.guild.text_channels, name="雑談")
+        if channel is not None:
+            await channel.send(f"ようこそ {member.mention} さん！サーバーへ参加ありがとうございます。")
+        else:
+            print(f"{member.name} さんが参加しましたが、メッセージを送るチャンネルが見つかりませんでした。")
 
 
 
