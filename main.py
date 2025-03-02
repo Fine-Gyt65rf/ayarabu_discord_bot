@@ -18,12 +18,7 @@ from MessageTimelineContainer import MessageTimelineContainer
 from DynamicUi import DynamicOkButton,DynamicSelectMenu
 
 meow = MeowMeow()
-super_user = ["fine4139", "ayalovex0001", "liankuma"]
-
-
-def contains_any_substring(main_string, substrings):
-    return any(substring in main_string for substring in substrings)
-
+super_user = ["fine4139", "ayalovex0001", "liankuma", "kujirakusu_07611", "kiyoka6639"]
 
 
 
@@ -384,9 +379,15 @@ class messageManager(commands.Cog):
             is_registered_name, unupdated_list = self.spread_content.find_point(self.registrant_name, point_set_list)
             
             if (is_registered_name == False):
-                self.return_message += meow.meowmeow_accent("ERROR: 名前が見つかりませんでした。\n申し訳ないですが対応をお待ちください。翌日にはできるようになっているはずです",self.is_meow)
-
-            elif (len(unupdated_list) == 0 and len(point_set_list) > 0):
+                self.return_message += meow.meowmeow_accent(" 新規メンバーの皆さん、ようこそ！\
+                                                            \nこのBotは 戦力登録を自動で行うBot です！\
+                                                            \n登録したデータは、チャンネル上の「反映先のスプレッドシート」に自動で記録されます！\
+                                                            \n詳しい使い方は「#bot仕様」で確認できますので、ぜひチェックしてみてください！\
+                                                            \n\n",self.is_meow)
+                self.spread_content.registered_name(self.registrant_name, self.author_user_id)            
+                is_registered_name, unupdated_list = self.spread_content.find_point(self.registrant_name, point_set_list)
+            
+            if (len(unupdated_list) == 0 and len(point_set_list) > 0):
                 self.return_message += meow.meowmeow_accent(f"最新の状態です！",self.is_meow)
 
             else:
@@ -592,7 +593,7 @@ class messageManager(commands.Cog):
         send_message = meow.meowmeow_accent("削除しました！\n", self.is_meow)
         self.mongo_db.delete_tl(id)
         return send_message,View()
-    
+
 
 class memberManager(commands.Cog):
     def __init__(self, bot):
@@ -606,11 +607,60 @@ class memberManager(commands.Cog):
         # 新規参加者に対してメッセージを送信
         channel = discord.utils.get(member.guild.text_channels, name="雑談")
         if channel is not None:
-            await channel.send(f"ようこそ {member.mention} さん！サーバーへ参加ありがとうございます。")
+            await channel.send(f"ようこそ {member.mention} さん！サーバーへ参加ありがとうございます。\
+                               \nこのサーバーでは、みんなで楽しく交流しながら同盟戦を盛り上げています！\
+                               \n🔹 サーバーでできること\
+                               \n・同盟戦の作戦会議＆情報共有 \
+                               \n・雑談＆ゲームの話\
+                               \n・戦力報告も自動で行えます！\
+                               \n🔹 まずはここをチェック！\
+                               \n✅ #雑談：気軽に話しかけてみてください！相談もOKです！\
+                               \n✅ #レシピ交易所：レシピの譲渡や交換の相談などを行っています！\
+                               \n✅ #タイムライン相談室：タイムラインの相談などを行っています！\
+                               \n✅ #戦力登録専用：ぜひとも自分の戦力を書いてみてください！例えば、「対闇lv300 3p」のように戦力を書いてみてください")
+            #self.spread_content.registered_name()
         else:
             print(f"{member.name} さんが参加しましたが、メッセージを送るチャンネルが見つかりませんでした。")
 
+"""
+class memberManager(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+        # もし元のコードで使われている属性があるなら、それを継承しておきます
+        self.spread_content = self.bot.spread_content
+        self.mongo_db = self.bot.mongo_db
 
+    @commands.Cog.listener()
+    async def on_member_join(self, member: discord.Member):
+        ""
+        サーバーにメンバーが参加した際に呼び出されるイベント。
+        必要があれば、ここに処理を記述してください。
+        （元コードの例では、特定チャンネルにウェルカムメッセージを送っていました）
+        ""
+        pass
+
+    @commands.Cog.listener()
+    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
+        ""
+        リアクションが追加されたときに呼び出されるイベント。
+        ここでは例として、リアクションが追加されたメッセージID・絵文字・ユーザーIDを
+        コンソールに出力するだけにしています。
+        ""
+        # Bot自身のリアクションは無視したい場合は以下のようにチェックします
+        # （payload.member は on_raw_reaction_add では取得可能ですが、
+        #  on_raw_reaction_remove では None になる点に注意）
+        if payload.member is not None and payload.member.bot:
+            return
+
+        # リアクションがあったメッセージのID
+        message_id = payload.message_id
+        # リアクションしたユーザーのID
+        user_id = payload.user_id
+        # リアクションに使われた絵文字
+        emoji = payload.emoji
+
+        print(f"メッセージ {message_id} にユーザー {user_id} が絵文字 {emoji} でリアクションしました。")
+"""
 
 bot = MyBot(intents=discord.Intents.all())
 
