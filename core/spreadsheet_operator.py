@@ -7,7 +7,7 @@ import datetime
 import json
 import os
 
-levels = ["180", "190", "200", "250", "275", "300", "325"]
+levels = ["190", "200", "250", "275", "300", "325", "350"]
 
 
 class SpreadContent:
@@ -190,13 +190,13 @@ class SpreadContent:
         level_cell_pos_dict = {levels[i]: 5*i for i in range(len(levels))}
         """
         level_cell_pos_dict = {
-            "180": 0,
-            "190": 5,
-            "200": 10,
-            "250": 15,
-            "275": 20,
-            "300": 25,
-            "325": 30,
+            "190": 0,
+            "200": 5,
+            "250": 10,
+            "275": 15,
+            "300": 20,
+            "325": 25,
+            "350": 30,
         }
         """
 

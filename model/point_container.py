@@ -1,9 +1,9 @@
 import re
 
-class MessagePointContainer:
+class PointContainer:
     def __init__(self, message):
         self.reg_elements = ["火", "水", "風", "光", "闇", "全"]
-        self.reg_levels = ["180", "190", "200", "250", "275", "300", "325"]
+        self.reg_levels = ["190", "200", "250", "275", "300", "325", "350"]
         self.reg_points = ["10", "11", "12", "13", "14", "15",
                            "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
         self.words_to_keep_reg = self.reg_elements + self.reg_levels+self.reg_points

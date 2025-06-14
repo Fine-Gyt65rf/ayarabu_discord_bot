@@ -5,7 +5,7 @@ import re
 def contains_any_substring(main_string, substrings):
     return any(substring in main_string for substring in substrings)
 
-class MeowMeow:
+class MeowTalk:
     def __init__(self):
 
         meowmeow_input_raw = ["にゃ" ,"みゃ" ,"ニャ" , "ミャ", "シャー"]
@@ -96,7 +96,7 @@ class MeowMeow:
 
 def main():
     # テスト用の文章
-    meowmeow=MeowMeow()
+    meowmeow=MeowTalk()
     sample_text = "表示したいタイムラインを選択してください\n"
     converted_text = meowmeow.meowmeow_accent(sample_text,True)
     print("猫語変換後:", converted_text)

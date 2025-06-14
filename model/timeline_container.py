@@ -2,7 +2,7 @@ import re
 import datetime
 import time
 
-class MessageTimelineContainer:
+class TimelineContainer:
     def __init__(self, message, tl_author_other):
         self.message = message
         self.content = self.message.content
@@ -11,7 +11,7 @@ class MessageTimelineContainer:
         self.attack_types = ["スキル", "通攻"]
         self.my_elements = ["火", "水", "風", "光", "闇"]
         self.vs_elements = ["対火", "対水", "対風", "対光", "対闇"]
-        self.tl_levels = ["180", "190", "200", "250", "275", "300", "325"]
+        self.tl_levels = ["190", "200", "250", "275", "300", "325", "350"]
         self.tl_points = ["1", "2", "3"]
 
         self.words_to_keep_tl = self.attack_types+self.my_elements + \
