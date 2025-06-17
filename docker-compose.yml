@@ -1,0 +1,18 @@
+version: '3'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: docker/node/Dockerfile
+    volumes:
+      - ./frontend/node/frontend:/usr/src/app/frontend
+    command: sh -c "cd /usr/src/app/frontend && yarn start"
+    ports:
+      - "3000:3000"
+
+

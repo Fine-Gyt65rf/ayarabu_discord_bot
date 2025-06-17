@@ -1,0 +1,21 @@
+windowsでのayarabu_discord_botの開発環境(Docker Python Django React VSCode)設定手順
+①Pythonのインストール
+https://www.python.org/downloads/windows/
+よりダウンロード
+
+②Dockerのインストール
+https://docs.docker.com/desktop/setup/install/windows-install/
+よりダウンロード
+
+③VSCode
+https://azure.microsoft.com/ja-jp/products/visual-studio-code
+よりダウンロード
+VSCodeの拡張機能を追加
+・ES7 React/Redux/GraphQL/React-Native snippets
+・ESLint
+・Prettier - Code formatter
+・VSCode React Refactor
+・Python
+・Dev Containers
+・Docker
+
