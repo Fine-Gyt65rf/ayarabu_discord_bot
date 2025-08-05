@@ -1,7 +1,7 @@
 import os
 import discord
 from bot.keep_alive import keep_alive
-
+import traceback
 
 from bot.my_bot import MyBot
 
@@ -20,4 +20,5 @@ try:
     bot.run(os.environ['TOKEN'])
 except:
     print("起動失敗")
+    traceback.print_exc()  # スタックトレースを表示
     os.system("kill 1")
